@@ -6,6 +6,8 @@ case object Turn extends Input
 
 case class Machine(locked: Boolean, candies: Int, coins: Int) {
 
+  def maintain(newCandies: Int): Machine = Machine(locked = false, newCandies, coins = 0)
+  
   def process(input: Input): Machine =
     if (candies == 0) this
     else

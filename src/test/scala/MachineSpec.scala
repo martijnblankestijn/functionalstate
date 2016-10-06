@@ -50,6 +50,19 @@ class MachineSpec extends WordSpec with Matchers {
 
     }
 
+    "with 5 candies and 10 coins and refill" in {
+      val initialMachine: Machine = Machine(locked = true, candies = 5, coins = 10)
+      val state: State[Machine, (Int, Int)] = Machine.simulateMachine(List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn))
+      state
+      val ((coins, candies), m) = state.run(initialMachine)
+
+      m.locked shouldBe true
+      coins shouldBe 14
+      candies shouldBe 1
+
+    }
+
+
     "with 5 candies and 10 coins recursive" in {
       val initialMachine: Machine = Machine(locked = true, candies = 5, coins = 10)
       val endState: Machine = Machine.simulateMachine3(initialMachine)(List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn))

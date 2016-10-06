@@ -3,7 +3,6 @@ package trafficlight
 // From http://timperrett.com/2013/11/25/understanding-state-monad/
 
 
-case class Signal(isOperational: Boolean, display: Map[TrafficLight, Mode])
 
 sealed trait TrafficLight
 case object Red extends TrafficLight
@@ -15,6 +14,7 @@ case object Off extends Mode
 case object Flashing extends Mode
 case object Solid extends Mode
 
+case class Signal(isOperational: Boolean, display: Map[TrafficLight, Mode])
 object Signal {
 
   import scalaz.State
