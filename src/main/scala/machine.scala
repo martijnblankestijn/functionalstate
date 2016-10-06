@@ -6,7 +6,7 @@ case object Turn extends Input
 
 case class Machine(locked: Boolean, candies: Int, coins: Int) {
 
-  def maintain(newCandies: Int): Machine = Machine(locked = false, newCandies, coins = 0)
+  def maintain(newCandies: Int): Machine = Machine(locked = true, newCandies + candies, coins = 0)
   
   def process(input: Input): Machine =
     if (candies == 0) this
@@ -23,7 +23,18 @@ case class Machine(locked: Boolean, candies: Int, coins: Int) {
     if (locked) this else copy(locked = true, candies = candies - 1)
 }
 
-case class State[S, +A](run: S => (A, S))
+case class State[S, +A](run: S => (A, S)) {
+  def map[B](f: A => B) : State[S,B] = State { s =>
+    val (a,s1) = run(s)
+    (f(a), s1)
+  }
+  
+  def flatMap[B](f: A => State[S,B]): State[S,B] =
+    State { s =>
+      val (a, s1) = run(s)
+      f(a).run(s1)  
+    }
+}
 
 object Machine {
   def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] =
@@ -31,6 +42,15 @@ object Machine {
       val endState = inputs.foldLeft(machine)((m, input) => m.process(input))
       ((endState.coins, endState.candies), endState)
     })
+  
+  def refill(candies: Int): State[Machine, (Int, Int)] = 
+    State(machine => {
+      val machine1: Machine = machine.maintain(candies)
+      val result: (Int, Int) = (machine1.coins, machine1.candies)
+      println("Refilled machine, now " + result + " for machine " + machine1)
+      (result, machine1)
+    }
+    )
 
 
   def simulateMachine2(inputs: List[Input]): State[Machine, (Int, Int)] = {

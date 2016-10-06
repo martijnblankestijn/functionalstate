@@ -23,7 +23,8 @@ class SideEffectingSpec extends WordSpec with Matchers {
         y
       }
 
-      g(x) shouldBe g(x)
+      // DOES NOT HOLD
+      // g(x) shouldBe g(x)
 
     }
   }

@@ -52,13 +52,14 @@ class MachineSpec extends WordSpec with Matchers {
 
     "with 5 candies and 10 coins and refill" in {
       val initialMachine: Machine = Machine(locked = true, candies = 5, coins = 10)
-      val state: State[Machine, (Int, Int)] = Machine.simulateMachine(List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn))
-      state
-      val ((coins, candies), m) = state.run(initialMachine)
+      val endState =
+        Machine.simulateMachine(List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn))
+          .flatMap { case (_, cand) => Machine.refill(100 - cand) }
+      val ((coins, candies), m) = endState.run(initialMachine)
 
       m.locked shouldBe true
-      coins shouldBe 14
-      candies shouldBe 1
+      coins shouldBe 0
+      candies shouldBe 100
 
     }
 
