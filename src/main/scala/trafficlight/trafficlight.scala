@@ -22,7 +22,7 @@ object Signal {
 
   type ->[A, B] = (A, B)
   type SignalState[A] = State[Signal, A]
-
+  
   val default = Signal(
     isOperational = false,
     display = Map(Red -> Flashing, Orange -> Off, Green -> Off))

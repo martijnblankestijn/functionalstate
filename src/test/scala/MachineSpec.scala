@@ -1,5 +1,7 @@
 import org.scalatest.{Matchers, WordSpec}
 
+import scalaz.Alpha.M
+
 class MachineSpec extends WordSpec with Matchers {
   "A vending Machine" should {
     "unlock when coin inserted and candy available" in {
@@ -39,9 +41,11 @@ class MachineSpec extends WordSpec with Matchers {
     }
 
 
+    val inputs: List[Input with Product with Serializable] = List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn)
+    
     "with 5 candies and 10 coins" in {
       val initialMachine: Machine = Machine(locked = true, candies = 5, coins = 10)
-      val state: State[Machine, (Int, Int)] = Machine.simulateMachine(List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn))
+      val state: State[Machine, (Int, Int)] = Machine.simulateMachine(inputs)
       val ((coins, candies), m) = state.run(initialMachine)
 
       m.locked shouldBe true
@@ -52,11 +56,33 @@ class MachineSpec extends WordSpec with Matchers {
 
     "with 5 candies and 10 coins and refill" in {
       val initialMachine: Machine = Machine(locked = true, candies = 5, coins = 10)
-      val endState =
-        Machine.simulateMachine(List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn))
-          .flatMap { case (_, cand) => Machine.refill(100 - cand) }
-      val ((coins, candies), m) = endState.run(initialMachine)
+      
+      val m1: Machine = initialMachine.process(Coin)
+      val m2 = m1.process(Turn)
+      val m3 = m2.refill(newCandies = 5)
+      val m4 = m3.collect()
+      val m5 = m4.process(Coin)
+      
+      println("Machines:\n" + initialMachine + "\n" + m1 + "\n" + m2+ "\n" + m3+ "\n" + m4 + "\n" + m5)
+      
+//      val endState =
+//        Machine.simulateMachine(inputs)
+//          .flatMap { case (_, cand) => Machine.refill(100 - cand) }
 
+      val endState: State[Machine, (Int, Int)] = for {
+        // http://stackoverflow.com/questions/4380831/why-does-filter-have-to-be-defined-for-pattern-matching-in-a-for-loop-in-scala
+        // COMPILER ERROR:
+//        (_, candies) <- Machine.simulateMachine(inputs)
+//              r <- Machine.refill(100 - candies)
+        s <- Machine.simulateMachine(inputs)
+//        _ <- Machine.refill(100 - s._2)
+//        t <- Machine.collect()
+        t <- Machine.maintain(100 - s._2)
+
+      } yield t
+
+      val ((coins, candies), m) = endState.run(initialMachine)
+      
       m.locked shouldBe true
       coins shouldBe 0
       candies shouldBe 100
@@ -66,7 +92,7 @@ class MachineSpec extends WordSpec with Matchers {
 
     "with 5 candies and 10 coins recursive" in {
       val initialMachine: Machine = Machine(locked = true, candies = 5, coins = 10)
-      val endState: Machine = Machine.simulateMachine3(initialMachine)(List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn))
+      val endState: Machine = Machine.simulateMachine3(initialMachine)(inputs)
 
       endState.locked shouldBe true
       endState.coins shouldBe 14

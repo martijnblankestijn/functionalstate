@@ -1,13 +1,15 @@
 import scala.annotation.tailrec
 
 sealed trait Input
-case object Coin extends Input
-case object Turn extends Input
 
 case class Machine(locked: Boolean, candies: Int, coins: Int) {
 
-  def maintain(newCandies: Int): Machine = Machine(locked = true, newCandies + candies, coins = 0)
-  
+  def refill(newCandies: Int): Machine =
+    copy(locked = true, newCandies + candies)
+
+  def collect(): Machine =
+    copy(locked = true, coins = 0)
+
   def process(input: Input): Machine =
     if (candies == 0) this
     else
@@ -24,17 +26,34 @@ case class Machine(locked: Boolean, candies: Int, coins: Int) {
 }
 
 case class State[S, +A](run: S => (A, S)) {
-  def map[B](f: A => B) : State[S,B] = State { s =>
-    val (a,s1) = run(s)
+  def map[B](f: A => B): State[S, B] = State { s =>
+    val (a, s1) = run(s)
     (f(a), s1)
   }
-  
-  def flatMap[B](f: A => State[S,B]): State[S,B] =
+
+  def flatMap[B](f: A => State[S, B]): State[S, B] =
     State { s =>
       val (a, s1) = run(s)
-      f(a).run(s1)  
+      f(a).run(s1)
     }
+
+  /**
+    * What does filter mean with a State Monad??
+    */
+  /*  
+    def filter(f: A => Boolean): State[S,A] =
+      State { s =>
+        val (a, s1) = run(s)
+  //      if(f(a))   ...??
+        (a, s1)
+      }
+      */
+
 }
+
+case object Coin extends Input
+
+case object Turn extends Input
 
 object Machine {
   def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] =
@@ -42,15 +61,26 @@ object Machine {
       val endState = inputs.foldLeft(machine)((m, input) => m.process(input))
       ((endState.coins, endState.candies), endState)
     })
-  
-  def refill(candies: Int): State[Machine, (Int, Int)] = 
-    State(machine => {
-      val machine1: Machine = machine.maintain(candies)
-      val result: (Int, Int) = (machine1.coins, machine1.candies)
-      println("Refilled machine, now " + result + " for machine " + machine1)
-      (result, machine1)
+
+  def refill(candies: Int): State[Machine, (Int, Int)] =
+    State { machine =>
+      val m1 = machine.refill(candies)
+      //      println("Refilled machine, now " + result + " for machine " + m1)
+      ((m1.coins, m1.candies), m1)
     }
-    )
+
+  def collect(): State[Machine, (Int, Int)] =
+    State { (m: Machine) =>
+      val m1 = m.collect()
+      ((m1.coins, m1.candies), m1)
+    }
+  
+  def maintain(candies: Int): State[Machine, (Int, Int)] = {
+    for {
+      _ <- refill(candies)
+      r <- collect()
+    } yield r
+  }
 
 
   def simulateMachine2(inputs: List[Input]): State[Machine, (Int, Int)] = {
@@ -60,15 +90,15 @@ object Machine {
     })
     State(run)
   }
-  
+
   def simulateMachine3(start: Machine)(inputs: List[Input]): Machine = {
-    
+
     @tailrec
     def loop(inputs: List[Input], result: Machine): Machine = inputs match {
-      case Nil     => result
+      case Nil => result
       case x :: xs => loop(xs, result.process(x))
     }
-    
-    loop(inputs, start) 
+
+    loop(inputs, start)
   }
 }
