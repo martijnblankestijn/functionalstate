@@ -3,13 +3,6 @@ import scala.annotation.tailrec
 sealed trait Input
 
 case class Machine(locked: Boolean, candies: Int, coins: Int) {
-
-  def refill(newCandies: Int): Machine =
-    copy(locked = true, newCandies + candies)
-
-  def collect(): Machine =
-    copy(locked = true, coins = 0)
-
   def process(input: Input): Machine =
     if (candies == 0) this
     else
@@ -62,26 +55,35 @@ object Machine {
       ((endState.coins, endState.candies), endState)
     })
 
-  def refill(candies: Int): State[Machine, (Int, Int)] =
-    State { machine =>
-      val m1 = machine.refill(candies)
+  def input(input: Input): State[Machine, (Int, Int)] =
+    State { m =>
+      val m1 = m.process(input)
+      ((m1.coins, m1.candies), m1)
+    }
+
+  def maintain(candies: Int): State[Machine, (Int, Int)] =
+    refill(candies)
+      .flatMap(m => collect())
+
+  def refill(newCandies: Int): State[Machine, (Int, Int)] =
+    State { m =>
+      val m1 = m.copy(locked = true, newCandies + m.candies)
       //      println("Refilled machine, now " + result + " for machine " + m1)
       ((m1.coins, m1.candies), m1)
     }
 
   def collect(): State[Machine, (Int, Int)] =
-    State { (m: Machine) =>
-      val m1 = m.collect()
+    State { m =>
+      val m1 = m.copy(locked = true, coins = 0)
       ((m1.coins, m1.candies), m1)
     }
-  
-  def maintain(candies: Int): State[Machine, (Int, Int)] = {
-    for {
-      _ <- refill(candies)
-      r <- collect()
-    } yield r
-  }
 
+
+def maintainForComprehension(candies: Int): State[Machine, (Int, Int)] =
+  for {
+    _ <- refill(candies)
+    s <- collect()
+  } yield s
 
   def simulateMachine2(inputs: List[Input]): State[Machine, (Int, Int)] = {
     val run = (m: Machine) => inputs.foldLeft(((0, 0), m))((m, input) => {

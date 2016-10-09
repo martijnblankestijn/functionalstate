@@ -1,6 +1,6 @@
 import org.scalatest.{Matchers, WordSpec}
 
-import scalaz.Alpha.M
+import Machine._
 
 class MachineSpec extends WordSpec with Matchers {
   "A vending Machine" should {
@@ -57,14 +57,6 @@ class MachineSpec extends WordSpec with Matchers {
     "with 5 candies and 10 coins and refill" in {
       val initialMachine: Machine = Machine(locked = true, candies = 5, coins = 10)
       
-      val m1: Machine = initialMachine.process(Coin)
-      val m2 = m1.process(Turn)
-      val m3 = m2.refill(newCandies = 5)
-      val m4 = m3.collect()
-      val m5 = m4.process(Coin)
-      
-      println("Machines:\n" + initialMachine + "\n" + m1 + "\n" + m2+ "\n" + m3+ "\n" + m4 + "\n" + m5)
-      
 //      val endState =
 //        Machine.simulateMachine(inputs)
 //          .flatMap { case (_, cand) => Machine.refill(100 - cand) }
@@ -75,9 +67,9 @@ class MachineSpec extends WordSpec with Matchers {
 //        (_, candies) <- Machine.simulateMachine(inputs)
 //              r <- Machine.refill(100 - candies)
         s <- Machine.simulateMachine(inputs)
-//        _ <- Machine.refill(100 - s._2)
-//        t <- Machine.collect()
-        t <- Machine.maintain(100 - s._2)
+        _ <- Machine.refill(100 - s._2)
+        t <- Machine.collect()
+//        t <- Machine.maintain(100 - s._2)
 
       } yield t
 
@@ -87,6 +79,31 @@ class MachineSpec extends WordSpec with Matchers {
       coins shouldBe 0
       candies shouldBe 100
 
+    }
+    
+    "with using all possible way to change the state" in {
+      val initialMachine: Machine = Machine(locked = true, candies = 0, coins = 0)
+
+      val ((fCoins, fCandies), fMachine) = refill(5)
+        .flatMap(_ => input(Coin))
+        .flatMap(_ => input(Turn))
+        .run(initialMachine)
+      fCoins shouldBe 1
+      fCandies shouldBe 4
+      fMachine.locked shouldBe true
+
+
+      val pipeline: State[Machine, (Int, Int)] = for {
+        _ <- refill(5)
+        _ <- input(Coin)
+        s <- input(Turn)
+      } yield s
+
+      val ((coins, candies), machine) = pipeline run initialMachine
+      
+      coins shouldBe 1
+      candies shouldBe 4
+      machine.locked shouldBe true
     }
 
 
