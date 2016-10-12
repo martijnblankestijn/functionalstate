@@ -1,6 +1,7 @@
-import org.scalatest.{Matchers, WordSpec}
-
+package state
 import Machine._
+import domain.{Coin, Input, Turn}
+import org.scalatest.{Matchers, WordSpec}
 
 class MachineSpec extends WordSpec with Matchers {
   "A vending Machine" should {
@@ -42,10 +43,10 @@ class MachineSpec extends WordSpec with Matchers {
 
 
     val inputs: List[Input with Product with Serializable] = List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn)
-    
+
     "with 5 candies and 10 coins" in {
       val initialMachine: Machine = Machine(locked = true, candies = 5, coins = 10)
-      val state: State[Machine, (Int, Int)] = Machine.simulateMachine(inputs)
+      val state: State[Machine, (Int, Int)] = simulateMachine(inputs)
       val ((coins, candies), m) = state.run(initialMachine)
 
       m.locked shouldBe true
@@ -54,33 +55,43 @@ class MachineSpec extends WordSpec with Matchers {
 
     }
 
+    "show working of map" in {
+      val pipeline: State[Machine, String] =
+        simulateMachine(List(Coin, Turn))
+          .map { case (coins, candies) => s"Current returns are EUR $coins" }
+
+      val initialMachine = Machine(locked = true, candies = 5, coins = 10)
+      val (message, machine) = pipeline run initialMachine
+      message shouldBe "Current returns are EUR 11"
+    }
+
     "with 5 candies and 10 coins and refill" in {
       val initialMachine: Machine = Machine(locked = true, candies = 5, coins = 10)
-      
-//      val endState =
-//        Machine.simulateMachine(inputs)
-//          .flatMap { case (_, cand) => Machine.refill(100 - cand) }
+
+      //      val endState =
+      //        Machine.simulateMachine(inputs)
+      //          .flatMap { case (_, cand) => Machine.refill(100 - cand) }
 
       val endState: State[Machine, (Int, Int)] = for {
-        // http://stackoverflow.com/questions/4380831/why-does-filter-have-to-be-defined-for-pattern-matching-in-a-for-loop-in-scala
-        // COMPILER ERROR:
-//        (_, candies) <- Machine.simulateMachine(inputs)
-//              r <- Machine.refill(100 - candies)
-        s <- Machine.simulateMachine(inputs)
+      // http://stackoverflow.com/questions/4380831/why-does-filter-have-to-be-defined-for-pattern-matching-in-a-for-loop-in-scala
+      // COMPILER ERROR:
+      //        (_, candies) <- Machine.simulateMachine(inputs)
+      //              r <- Machine.refill(100 - candies)
+        s <- simulateMachine(inputs)
         _ <- Machine.refill(100 - s._2)
         t <- Machine.collect()
-//        t <- Machine.maintain(100 - s._2)
+      //        t <- Machine.maintain(100 - s._2)
 
       } yield t
 
       val ((coins, candies), m) = endState.run(initialMachine)
-      
+
       m.locked shouldBe true
       coins shouldBe 0
       candies shouldBe 100
 
     }
-    
+
     "with using all possible way to change the state" in {
       val initialMachine: Machine = Machine(locked = true, candies = 0, coins = 0)
 
@@ -100,7 +111,7 @@ class MachineSpec extends WordSpec with Matchers {
       } yield s
 
       val ((coins, candies), machine) = pipeline run initialMachine
-      
+
       coins shouldBe 1
       candies shouldBe 4
       machine.locked shouldBe true

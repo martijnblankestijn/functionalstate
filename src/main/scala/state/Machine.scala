@@ -1,9 +1,14 @@
+package state
+
+import domain.{Coin, Turn}
+
 import scala.annotation.tailrec
 
-sealed trait Input
-
+/**
+  * Created by mblankestijn on 12/10/16.
+  */
 case class Machine(locked: Boolean, candies: Int, coins: Int) {
-  def process(input: Input): Machine =
+  def process(input: domain.Input): Machine =
     if (candies == 0) this
     else
       input match {
@@ -18,48 +23,18 @@ case class Machine(locked: Boolean, candies: Int, coins: Int) {
     if (locked) this else copy(locked = true, candies = candies - 1)
 }
 
-case class State[S, +A](run: S => (A, S)) {
-  def map[B](f: A => B): State[S, B] = State { s =>
-    val (a, s1) = run(s)
-    (f(a), s1)
-  }
-
-  def flatMap[B](f: A => State[S, B]): State[S, B] =
-    State { s =>
-      val (a, s1) = run(s)
-      f(a).run(s1)
-    }
-
-  /**
-    * What does filter mean with a State Monad??
-    */
-  /*  
-    def filter(f: A => Boolean): State[S,A] =
-      State { s =>
-        val (a, s1) = run(s)
-  //      if(f(a))   ...??
-        (a, s1)
-      }
-      */
-
-}
-
-case object Coin extends Input
-
-case object Turn extends Input
-
 object Machine {
-  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] =
+  def simulateMachine(inputs: List[domain.Input]): State[Machine, (Int, Int)] =
     State(machine => {
       val endState = inputs.foldLeft(machine)((m, input) => m.process(input))
       ((endState.coins, endState.candies), endState)
     })
 
-  def input(input: Input): State[Machine, (Int, Int)] =
-    State { m =>
-      val m1 = m.process(input)
-      ((m1.coins, m1.candies), m1)
-    }
+def input(input: domain.Input): State[Machine, (Int, Int)] =
+  State { m =>
+    val m1 = m.process(input)
+    ((m1.coins, m1.candies), m1)
+  }
 
   def maintain(candies: Int): State[Machine, (Int, Int)] =
     refill(candies)
@@ -85,7 +60,7 @@ def maintainForComprehension(candies: Int): State[Machine, (Int, Int)] =
     s <- collect()
   } yield s
 
-  def simulateMachine2(inputs: List[Input]): State[Machine, (Int, Int)] = {
+  def simulateMachine2(inputs: List[domain.Input]): State[Machine, (Int, Int)] = {
     val run = (m: Machine) => inputs.foldLeft(((0, 0), m))((m, input) => {
       val newState: Machine = m._2.process(input)
       ((newState.coins, newState.candies), newState)
@@ -93,10 +68,10 @@ def maintainForComprehension(candies: Int): State[Machine, (Int, Int)] =
     State(run)
   }
 
-  def simulateMachine3(start: Machine)(inputs: List[Input]): Machine = {
+  def simulateMachine3(start: Machine)(inputs: List[domain.Input]): Machine = {
 
     @tailrec
-    def loop(inputs: List[Input], result: Machine): Machine = inputs match {
+    def loop(inputs: List[domain.Input], result: Machine): Machine = inputs match {
       case Nil => result
       case x :: xs => loop(xs, result.process(x))
     }
