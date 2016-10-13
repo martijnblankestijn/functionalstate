@@ -1,7 +1,8 @@
 package state
-import Machine._
+
 import domain.{Coin, Input, Turn}
 import org.scalatest.{Matchers, WordSpec}
+import state.Machine._
 
 class MachineSpec extends WordSpec with Matchers {
   "A vending Machine" should {
@@ -57,13 +58,30 @@ class MachineSpec extends WordSpec with Matchers {
 
     "show working of map" in {
       val pipeline: State[Machine, String] =
-        simulateMachine(List(Coin, Turn))
-          .map { case (coins, candies) => s"Current returns are EUR $coins" }
+        input(Coin)
+          .map { case (coins, _) => s"Returns are EUR $coins" }
 
-      val initialMachine = Machine(locked = true, candies = 5, coins = 10)
-      val (message, machine) = pipeline run initialMachine
-      message shouldBe "Current returns are EUR 11"
+      val machine = Machine(locked = true, candies = 5, coins = 10)
+      val (message, _) = pipeline run machine
+      message shouldBe "Returns are EUR 11"
     }
+
+    "show working of flatMap" in {
+      val machine: Machine = Machine(locked = true, candies = 5, coins = 10)
+
+val pipeline: State[Machine, (Int, Int)] =
+  input(Coin)
+    .flatMap(_ => input(Turn))
+
+val ((coins, candies), _) = pipeline run machine
+coins shouldBe 11
+candies shouldBe 4
+      
+      
+      val ((c2, _), _) = pipeline.flatMap(_ => input(Coin)).flatMap(_ => input(Turn)) run machine
+      c2 shouldBe 12
+    }
+
 
     "with 5 candies and 10 coins and refill" in {
       val initialMachine: Machine = Machine(locked = true, candies = 5, coins = 10)

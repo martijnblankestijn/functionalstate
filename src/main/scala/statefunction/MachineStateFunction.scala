@@ -20,5 +20,9 @@ object MachineStateFunction {
       val m1 = m.copy(locked = true, coins = 0)
       (m1, (m1.coins, m1.candies))
     }
-
+  
+  def maintain(newCandies: Int, m: Machine): (Machine, (Int, Int)) = {
+    val (m1, _) = refill(newCandies, m)
+    collect(m1)
+  }
 }
