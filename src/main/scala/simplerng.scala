@@ -1,3 +1,5 @@
+import java.security.SecureRandom
+
 import scala.Int.MaxValue
 import scala.collection.immutable.IndexedSeq
 
@@ -18,6 +20,13 @@ case class SimpleRNG(seed: Long) extends RNG {
 }
 
 object RNG {
+
+  def rollDice: Int = {
+    val rng = new scala.util.Random
+    rng.nextInt(6)
+  }
+
+  
   type Rand[+A] = RNG => (A, RNG)
 
   def unit[A](a: A): Rand[A] = rng => (a, rng)

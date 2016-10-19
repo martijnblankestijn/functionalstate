@@ -51,16 +51,14 @@ class MutableMachineSpec extends WordSpec with Matchers {
     }
 
 
-    "with 5 candies and 10 coins" in {
-      val machine: Machine = Machine(locked = true, candies = 5, coins = 10)
-//      val state: State[mutable.MutableMachine, (Int, Int)] = simulateMachine(List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn))
-      val inputs: List[Input] = List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn)
-      for (i <- inputs) machine process i
+    "on input and turning delivers a candy" in {
+val machine = Machine(locked = true, candies = 5, coins = 10)
 
-      machine.locked shouldBe true
-      machine.coins shouldBe 14
-      machine.candies shouldBe 1
+machine process Coin
+machine process Turn
 
+machine.coins shouldBe 11
+machine.candies shouldBe 4
     }
 
     "with 5 candies and 10 coins and refill" in {

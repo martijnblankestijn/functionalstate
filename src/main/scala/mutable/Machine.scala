@@ -6,13 +6,6 @@ import domain.{Coin, Input, Turn}
 class Machine(private var _locked: Boolean,
               private var _candies: Int,
               private var _coins: Int) {
-  def collect(): Unit = 
-    _coins = 0
-  
-
-  def refill(newCandies: Int): Unit = 
-    _candies = _candies + newCandies
-
 
   def process(input: Input): Unit = {
     if (_candies > 0) input match {
@@ -20,6 +13,13 @@ class Machine(private var _locked: Boolean,
       case Turn => turnKnob()
     }
   }
+
+  def collect(): Unit = 
+    _coins = 0
+  
+
+  def refill(newCandies: Int): Unit = 
+    _candies = _candies + newCandies
 
   // Expose read-only variables
   def candies = _candies
