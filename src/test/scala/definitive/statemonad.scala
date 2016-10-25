@@ -43,14 +43,14 @@ object Machine {
   def turn(): State[Machine, Candy] =
     State(m => (m.copy(candies = m.candies.tail), m.candies.head))
 
-      def insertCoinSet(coin: Coin): State[Machine, Unit] = for {
-        m <- State.get[Machine]
-        _ <- State.set(m.copy(coins = m.coins + 1))
-      } yield ()
+  def insertCoinSet(coin: Coin): State[Machine, Unit] = for {
+    m <- State.get[Machine]
+    _ <- State.set(m.copy(coins = m.coins + 1))
+  } yield ()
 
-      def insertCoinModify(coin: Coin): State[Machine, Unit] = for {
-        _ <- State.modify[Machine](m => m.copy(coins = m.coins + 1))
-      } yield ()
+  def insertCoinModify(coin: Coin): State[Machine, Unit] = for {
+    u <- State.modify[Machine](m => m.copy(coins = m.coins + 1))
+  } yield u
 
     }
 }
@@ -127,6 +127,15 @@ candy shouldBe Candy("Red")
     }
 
 
+    "test different flavours of inserting a Coin" in {
+      val m = Machine(0, candies)
+      
+      insertCoin(Coin) run m shouldBe (Machine(1, candies), ())  
+      insertCoinSet(Coin) run m shouldBe (Machine(1, candies), ())  
+      insertCoinModify(Coin) run m shouldBe (Machine(1, candies), ())  
+      
+    }
+    
     "unlock when coin inserted and candy available" in {
       // this is just pipelining (threading through) of the state
       // this does not do anything
