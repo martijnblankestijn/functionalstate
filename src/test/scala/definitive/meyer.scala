@@ -9,7 +9,7 @@ import scala.collection.mutable.ListBuffer
 
 object Meyer {
 
-class Machine(private val candies: ListBuffer[Candy],
+class Machine(private val candies: mutable.Buffer[Candy],
               private var _coins: Int) {
   private var _lastCandy:Candy = _
 
@@ -32,12 +32,12 @@ class MeyerSpec extends WordSpec with Matchers {
       val machine = new Machine(mutCandies, 0)
 
       mutCandies.foreach { c =>
-        machine.insertCoin(Coin)
+        machine.insertCoin(Coin())
         machine.turn()
 
         machine.lastCandy shouldBe c
       }
-      machine.coins shouldBe 8
+      machine.coins shouldBe 3
       machine.remainingCandies shouldBe 0
       
       // Note no introduction of option

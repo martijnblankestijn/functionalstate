@@ -1,6 +1,7 @@
 package definitive
 
 import definitive.Candies.candies
+import definitive.StateMonad.State.modify
 import definitive.StateMonad.{Machine, State}
 import org.scalatest.{Matchers, WordSpec}
 
@@ -25,20 +26,21 @@ object StateMonad {
 
     object State {
       def apply[S,A](f: S => (S,A)) = new State(f)
-      def unit[S, A](a: A): State[S, A] = new State(s => (s, a))
+      def unit[S, A](a: A): State[S, A] = State(s => (s, a))
 
-      def get[S]: State[S, S] = new State(s => (s, s))
+      def get[S]: State[S, S] = State(s => (s, s))
 
-      def set[S](newS: S): State[S, Unit] = new State(_ => (newS, ()))
+      def set[S](newS: S): State[S, Unit] = State(_ => (newS, ()))
 
-      def modify[S](f: S => S): State[S, Unit] = new State(s => (f(s), ()))
+      def modify[S](f: S => S): State[S, Unit] = State(s => (f(s), ()))
     }
 
 case class Machine(coins: Int, candies: List[Candy])
 
 object Machine {
-  def insertCoin(coin: Coin): State[Machine, Unit] =
-    State(m => (m.copy(coins = m.coins + 1), ()))
+  def insertCoin(coin: Coin): State[Machine, Unit] = State(m => 
+    ( m.copy(coins = m.coins + 1), () )
+  )
 
   def turn(): State[Machine, Candy] =
     State(m => (m.copy(candies = m.candies.tail), m.candies.head))
@@ -48,11 +50,22 @@ object Machine {
     _ <- State.set(m.copy(coins = m.coins + 1))
   } yield ()
 
-  def insertCoinModify(coin: Coin): State[Machine, Unit] = for {
-    u <- State.modify[Machine](m => m.copy(coins = m.coins + 1))
+  // composition example
+  def extractCandy(coin:Coin): State[Machine, Candy] = {
+    for {
+      _ <- insertCoin(Coin())
+      c <- turn()
+    } yield c
+  }
+  
+  def insertCoinModify(coin: Coin): State[Machine, Unit] = 
+    State.modify(m => m.copy(coins = m.coins + 1))
+
+  def insertCoinModify2(coin: Coin): State[Machine, Unit] = for {
+    u <- modify[Machine](m => m.copy(coins = m.coins + 1))
   } yield u
 
-    }
+}
 }
 class StateMonadSpec extends WordSpec with Matchers {
   import Machine._
@@ -64,7 +77,7 @@ val m0 = Machine(0, candies)
 val t: State[Machine, Candy] = Machine.turn()
 val (m1, candy) = t run m0
 
-candy shouldBe Candy("Blue")
+candy shouldBe Candy(BLUE)
       // nothing done to insertCoin so no Coins available
     }
 
@@ -72,10 +85,10 @@ candy shouldBe Candy("Blue")
 val m0 = Machine(0, candies)
 
 val turn: State[Machine, Candy] = Machine.turn()
-val tmap: State[Machine, String] = turn.map(_.color)
+val tmap: State[Machine, Color] = turn.map(_.color)
 val (m1, color) = tmap.run(m0)
 
-color shouldBe "Blue"
+color shouldBe BLUE
       // nothing done to insertCoin so no Coins available
     }
     
@@ -85,54 +98,54 @@ val m0 = Machine(0, candies)
 val state = Machine.turn().map(_.color)
 val (m1, color) = state.run(m0)
       
-color shouldBe "Blue"
+color shouldBe BLUE
     }
 
 
     " use of flatMap" in {
 val m0 = Machine(0, candies)
 
-val program = Machine.insertCoin(Coin).flatMap(_ => turn())
+val program = Machine.insertCoin(Coin()).flatMap(_ => turn())
 val (m1, candy) = program.run(m0)
 
-candy shouldBe Candy("Blue")
+candy shouldBe Candy(BLUE)
     }
 
     " use of multiple flatMaps" in {
       val m0 = Machine(0, candies)
 
 val program =
-  Machine.insertCoin(Coin)
+  Machine.insertCoin(Coin())
     .flatMap(_ => Machine.turn()
-      .flatMap(_ => Machine.insertCoin(Coin)
+      .flatMap(_ => Machine.insertCoin(Coin())
         .flatMap(_ => Machine.turn())))
 val (m1, candy) = program.run(m0)
 
-candy shouldBe Candy("Red")
+candy shouldBe Candy(RED)
     }
 
     " use of for comprehension simplifies." in {
       val m0 = Machine(0, candies)
 
 val program = for {
-  _ <- insertCoin(Coin)
+  _ <- insertCoin(Coin())
   _ <- turn()
-  _ <- insertCoin(Coin)
+  _ <- insertCoin(Coin())
   candy <- turn()
 } yield candy
 
 val (m1, candy) = program.run(m0)
 
-candy shouldBe Candy("Red")
+candy shouldBe Candy(RED)
     }
 
 
     "test different flavours of inserting a Coin" in {
       val m = Machine(0, candies)
       
-      insertCoin(Coin) run m shouldBe (Machine(1, candies), ())  
-      insertCoinSet(Coin) run m shouldBe (Machine(1, candies), ())  
-      insertCoinModify(Coin) run m shouldBe (Machine(1, candies), ())  
+      insertCoin(Coin()) run m shouldBe (Machine(1, candies), ())  
+      insertCoinSet(Coin()) run m shouldBe (Machine(1, candies), ())  
+      insertCoinModify(Coin()) run m shouldBe (Machine(1, candies), ())  
       
     }
     
@@ -140,14 +153,14 @@ candy shouldBe Candy("Red")
       // this is just pipelining (threading through) of the state
       // this does not do anything
       val program3 = for {
-        _ <- insertCoin(Coin)
+        _ <- insertCoin(Coin())
         _ <- turn()
-        _ <- insertCoin(Coin)
+        _ <- insertCoin(Coin())
         m <- turn()
       } yield m
       
       val (machine, candy) = program3.run(Machine(candies = candies, coins = 2))
-      candy shouldBe Candy("Red")
+      candy shouldBe Candy(RED)
       
       val getTheCoins: State[Machine, Int] = for {
         m <- State.get[Machine]
@@ -170,9 +183,9 @@ candy shouldBe Candy("Red")
       changedState._1.candies.size shouldBe candies.size * 3
       changedState._1.coins shouldBe 0
       
-      val v: Seq[State[Machine, Candy]] = 1 to 10 map { _ =>
+      val v: Seq[State[Machine, Candy]] = 1 to 4 map { _ =>
         for {
-          _ <- insertCoin(Coin)
+          _ <- insertCoin(Coin())
           m <- turn()
         } yield m
       }
@@ -185,8 +198,8 @@ candy shouldBe Candy("Red")
       
       val (m,_) = refillMachine.flatMap(_ => runNTimes).run(bigMachine)
       println(m)
-      m.coins shouldBe 10
-      m.candies.size shouldBe candies.size * 3 - 10  
+      m.coins shouldBe 4
+      m.candies.size shouldBe candies.size * 3 - 4  
 
       
     }

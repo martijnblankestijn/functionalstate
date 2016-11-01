@@ -1,17 +1,22 @@
 package definitive
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
 
-sealed trait Coin
-case object Coin extends Coin
+sealed trait Color
+case object BLUE extends Color
+case object RED extends Color
+case object GREEN extends Color
 
-case class Candy(color: String)
+
+case class Coin()
+
+case class Candy(color: Color)
 
 object Candies {
   val candies: List[Candy] =
-    List("Blue", "Red", "White", "Purple", "Green", "Orange", "Pink", "Yellow")
+    List(BLUE, RED, GREEN)
       .map(Candy)
-  def mutCandies: ListBuffer[Candy] = ListBuffer(candies: _*)
+  def mutCandies: ArrayBuffer[Candy] = ArrayBuffer(candies: _*)
 
 }
 
