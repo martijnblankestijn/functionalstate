@@ -11,7 +11,8 @@ object Traditional {
 class Machine(private val candies: mutable.Buffer[Candy],
               private var coins: Int) {
   
-  def insertCoin(coin: Coin): Unit = coins = coins + 1
+  def insert(coin: Coin): Unit = 
+    coins = coins + 1
   
   def turn(): Candy =  candies.remove(0)
 
@@ -32,7 +33,7 @@ val candies = ArrayBuffer(
 
 val machine = new Machine(candies, 0)
 
-machine.insertCoin(Coin())
+machine.insert(Coin())
 val candy: Candy = machine.turn()
 
 candy shouldBe Candy(BLUE)
@@ -45,7 +46,7 @@ machine.remainingCandies shouldBe 2
       val machine = new Machine(candies, 0)
 
       candies.toList.foreach { c =>
-        machine.insertCoin(Coin())
+        machine.insert(Coin())
         machine.turn() shouldBe c
       }
       machine.getCoins shouldBe 3

@@ -12,11 +12,11 @@ case class Machine(locked: Boolean, candies: Int, coins: Int) {
     if (candies == 0) this
     else
       input match {
-        case Coin => insertCoin(1)
+        case Coin => insert(1)
         case Turn => turnKnob()
       }
 
-  private def insertCoin(inserted: Int): Machine =
+  private def insert(inserted: Int): Machine =
     if (!locked) this else copy(locked = false, coins = coins + inserted)
 
   private def turnKnob(): Machine =

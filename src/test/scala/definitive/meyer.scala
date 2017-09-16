@@ -14,7 +14,7 @@ class Machine(private val candies: mutable.Buffer[Candy],
   private var _lastCandy:Candy = _
 
   // 'Commands' modify machine
-  def insertCoin(coin: Coin): Unit = _coins = _coins + 1
+  def insert(coin: Coin): Unit = _coins = _coins + 1
 
   def turn(): Unit = _lastCandy = candies.remove(0)
   
@@ -32,7 +32,7 @@ class MeyerSpec extends WordSpec with Matchers {
       val machine = new Machine(mutCandies, 0)
 
       mutCandies.foreach { c =>
-        machine.insertCoin(Coin())
+        machine.insert(Coin())
         machine.turn()
 
         machine.lastCandy shouldBe c
@@ -42,7 +42,7 @@ class MeyerSpec extends WordSpec with Matchers {
       
       // Note no introduction of option
 //
-//      machine.insertCoin(Coin)
+//      machine.insert(Coin)
 //      machine.turn()
 //
 //      machine.lastCandy shouldBe None

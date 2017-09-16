@@ -3,14 +3,14 @@ package mutable
 
 import domain.{Coin, Input, Turn}
 
-class Machine(private var _locked: Boolean,
-              private var _candies: Int,
-              private var _coins: Int) {
+class OriginalMachine(private var _locked: Boolean,
+                      private var _candies: Int,
+                      private var _coins: Int) {
 
   def process(input: Input): Unit = {
     if (_candies > 0) input match {
-      case Coin => insertCoin(1)
-      case Turn => turnKnob()
+      case Coin => insert(1)
+      case Turn => turn()
     }
   }
 
@@ -26,19 +26,19 @@ class Machine(private var _locked: Boolean,
   def coins = _coins
   def locked = _locked
 
-  private def insertCoin(inserted: Int) =
+  private def insert(inserted: Int) =
     if (_locked) {
       _locked = false
       _coins = _coins + inserted
     }
 
-  private def turnKnob() =
+  private def turn() =
     if (!_locked) {
       _locked = true
       _candies = _candies - 1
     }
 }
 
-object Machine {
-  def apply(locked: Boolean, candies: Int, coins: Int) = new Machine(locked, candies, coins)
+object OriginalMachine {
+  def apply(locked: Boolean, candies: Int, coins: Int) = new OriginalMachine(locked, candies, coins)
 }

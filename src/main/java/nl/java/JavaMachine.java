@@ -64,11 +64,11 @@ public class JavaMachine {
     if (candies == 0) {
       System.out.println("No candies ignoring input: " + input);
       return this;
-    } else return (input == Input.Coin) ? insertCoin(1) : turnKnob();
+    } else return (input == Input.Coin) ? insert(1) : turnKnob();
   }
 
 
-  private JavaMachine insertCoin(int inserted) {
+  private JavaMachine insert(int inserted) {
     System.out.println("Coin inserted");
     return locked ? new JavaMachine(false, this.candies, this.coins + inserted) : this;
   }

@@ -10,9 +10,9 @@ class StateMonadSpec extends WordSpec with Matchers {
       // this is just pipelining (threading through) of the state
       // this does not do anything
       val program3 = for {
-        _ <- insertCoin(Coin())
+        _ <- insert(Coin())
         _ <- turn()
-        _ <- insertCoin(Coin())
+        _ <- insert(Coin())
         m <- turn()
       } yield m
       
@@ -81,7 +81,7 @@ def flatMap[B](g: A => State[S, B]): State[S, B] =
   case class Machine(candies: Int, coins: Int)
 
   object Machine {
-    def insertCoin(coin: Coin): State[Machine, Unit] =
+    def insert(coin: Coin): State[Machine, Unit] =
       new State(machine =>
         (machine.copy(coins = machine.coins + 1), ())
       )
@@ -91,12 +91,12 @@ def flatMap[B](g: A => State[S, B]): State[S, B] =
         (machine.copy(candies = machine.candies - 1), Candy())
       )
 
-    def insertCoinSet(coin: Coin): State[Machine, Unit] = for {
+    def insertSet(coin: Coin): State[Machine, Unit] = for {
       m <- State.get[Machine]
       _ <- State.set(m.copy(coins = m.coins + 1))
     } yield ()
 
-    def insertCoinModify(coin: Coin): State[Machine, Unit] = for {
+    def insertModify(coin: Coin): State[Machine, Unit] = for {
       _ <- State.modify[Machine](m => m.copy(coins = m.coins + 1))
     } yield ()
 
@@ -106,9 +106,9 @@ def flatMap[B](g: A => State[S, B]): State[S, B] =
   val (m, c) = program.run(Machine(candies = 100, coins = 0))
 
   val program2 =
-    Machine.insertCoin(Coin())
+    Machine.insert(Coin())
       .flatMap(_ => Machine.turn()
-        .flatMap(_ => Machine.insertCoin(Coin())
+        .flatMap(_ => Machine.insert(Coin())
           .flatMap(_ => Machine.turn())
         )
       )
@@ -116,9 +116,9 @@ def flatMap[B](g: A => State[S, B]): State[S, B] =
   assert(m1.coins == 2)
 
   val program3 = for {
-    _ <- Machine.insertCoin(Coin())
+    _ <- Machine.insert(Coin())
     _ <- Machine.turn()
-    _ <- Machine.insertCoin(Coin())
+    _ <- Machine.insert(Coin())
     c <- Machine.turn()
   } yield c
 
